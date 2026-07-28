@@ -1,0 +1,28 @@
+# .orkai.yaml — project configuration for Orkai
+# See: orkai index --help
+project:
+    name: metascan
+    category_id: 1600706a2e51276e6930d05a345cb01b
+index:
+    type: all
+    path: .
+    code:
+        skip_tests: true
+    documents:
+        extensions:
+            - .md
+            - .pdf
+            - .docx
+    analytics:
+        enabled: true
+        paths:
+            - .
+        extensions:
+            - .csv
+            - .xlsx
+            - .parquet
+        validation:
+            require_header: true
+            min_rows: 1
+            max_columns: 0
+        fallback: skip
