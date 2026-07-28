@@ -1,0 +1,23 @@
+{
+	"name": "metascan-server",
+	"version": "0.1.0",
+	"description": "HTTP server app exposing @metascan/core over a Hono-on-Bun API.",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"bin": {
+		"metascan-server": "./src/index.ts"
+	},
+	"main": "./src/index.ts",
+	"scripts": {
+		"test": "bun test",
+		"lint": "biome check src",
+		"start": "bun run src/index.ts"
+	},
+	"dependencies": {
+		"@metascan/core": "workspace:*"
+	},
+	"engines": {
+		"bun": ">=1.2.0"
+	}
+}

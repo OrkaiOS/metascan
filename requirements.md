@@ -20,8 +20,9 @@ extensible.
 
 ## 3. Outcomes (Success Criteria)
 
-1. **Drop-in library** — A TypeScript package (`metascan`) installable via npm.
-   Calling it with a single URL returns a structured rich-preview object.
+1. **Drop-in library** — A TypeScript package (`@metascan/core`) installable
+   via npm. Calling it with a single URL returns a structured rich-preview
+   object.
 2. **Rich preview out of the box** — Returns title, description, image, url,
    and site name, parsed from Open Graph, Twitter Card, and standard meta
    tags, for the majority of common websites without configuration.
@@ -59,12 +60,20 @@ extensible.
 
 ## 6. Open Questions
 
-- **Output contract:** Exact field names and JSON shape for the preview object
-  (to be finalized with the architect/engineering).
-- **Rate limiting / auth on the server:** Needed now, or defer until we see
-  abuse? (Current assumption: plain REST for v1.)
-- **TTL / invalidation policy** for cached previews.
-- **Image handling:** Do we proxy/resize images, or return the source URL only?
-- **Naming & npm scope** (e.g., `metascan`, `@metascan/preview`).
-- **Slugs for unknown sites:** Fallback behavior when no OG/meta tags exist
-  (use `<title>` + first paragraph? return partial?).
+### Resolved (locked during planning)
+
+- **Output contract:** → locked. See the *PreviewResult Output Contract*
+  standard — `@metascan/core` returns a `PreviewResult`; the HTTP server maps
+  typed `PreviewError`s to status codes.
+- **Image handling:** → source URL only; no proxy/resize in v1.
+- **Naming & npm scope:** → library is `@metascan/core` (published to npm); the
+  server ships as the private `metascan-server` bin + Docker image (not on npm).
+- **Slugs for unknown sites:** → partial-result fallback (`<title>` + meta
+  description + first `<img>` when no OG/Twitter tags are present).
+
+### Still open / deferred
+
+- **Rate limiting / auth on the server:** defer until abuse appears; plain REST
+  for v1.
+- **TTL / invalidation policy** for cached previews: default ~1h,
+  env-configurable on the server; revisit later.
