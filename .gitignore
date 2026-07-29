@@ -24,3 +24,7 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# Orkai CLI local data (user-specific: category_id + entity UUIDs — not portable)
+.orkai/
+.orkai.yaml

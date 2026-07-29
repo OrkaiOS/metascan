@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Pre-commit gate: run `orkai review` against staged changes.
+# Safe to commit and share: no-ops if orkai is not installed or its daemon/config
+# is missing, so it never blocks users without orkai set up.
+set -uo pipefail
+
+# Skip if orkai is not on PATH.
+command -v orkai >/dev/null 2>&1 || exit 0
+
+# Review exactly what is staged (orkai review defaults to `git diff --cached`).
+orkai review
+status=$?
+
+case "$status" in
+  0)
+    exit 0
+    ;;
+  2)
+    # Config/usage error (daemon down, missing .orkai.yaml, bad CLI) — don't
+    # block the commit, just surface it.
+    printf '\n[orkai] review skipped (exit 2): config or usage issue.\n' >&2
+    printf '        Run `orkai review` manually, or `orkai review --help`.\n\n' >&2
+    exit 0
+    ;;
+  *)
+    # Exit 1 (or anything else): a process failed in strict mode.
+    printf '\n[orkai] review FAILED — commit blocked.\n' >&2
+    printf '        Details: `orkai review report --latest`\n' >&2
+    printf '        Bypass:  `git commit --no-verify` (not recommended)\n\n' >&2
+    exit 1
+    ;;
+esac
