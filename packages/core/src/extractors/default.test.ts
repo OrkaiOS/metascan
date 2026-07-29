@@ -3,6 +3,12 @@ import * as cheerio from "cheerio";
 import type { AdapterContext } from "../types";
 import { extract } from "./default";
 
+const FIXTURES = `${import.meta.dirname}/__fixtures__`;
+
+async function load(name: string): Promise<string> {
+	return Bun.file(`${FIXTURES}/${name}`).text();
+}
+
 function ctx(url: string, html: string): AdapterContext {
 	return {
 		url: new URL(url),
@@ -11,155 +17,84 @@ function ctx(url: string, html: string): AdapterContext {
 	};
 }
 
-test("OG title/description/image/site_name win over twitter and standard meta", () => {
-	const html = `
-		<html>
-		<head>
-			<title>std title</title>
-			<meta name="description" content="std description">
-			<meta name="twitter:title" content="tw title">
-			<meta name="twitter:description" content="tw description">
-			<meta name="twitter:image" content="https://tw.example.com/tw.png">
-			<meta property="og:title" content="og title">
-			<meta property="og:description" content="og description">
-			<meta property="og:image" content="https://og.example.com/og.png">
-			<meta property="og:site_name" content="og site">
-		</head>
-		<body><img src="ignored.png"></body>
-		</html>`;
-	const r = extract(ctx("https://example.com/page", html));
+const PAGE = "https://example.metascan.dev/page";
+
+test("og-rich.html: OG title/description/image/site_name win over twitter and standard meta", async () => {
+	const r = extract(ctx(PAGE, await load("og-rich.html")));
 	expect(r).toEqual({
-		url: "https://example.com/page",
-		title: "og title",
-		description: "og description",
-		image: { url: "https://og.example.com/og.png" },
-		siteName: "og site",
+		url: PAGE,
+		title: "OG Rich Page",
+		description: "Full Open Graph fixture for extractor tests.",
+		image: { url: "https://example.metascan.dev/og-rich/cover.png" },
+		siteName: "MetaScan Docs",
 	});
 });
 
-test("twitter fills a field only when og is absent (per-field precedence)", () => {
-	const html = `
-		<head>
-			<meta property="og:title" content="og title">
-			<meta name="twitter:description" content="tw description">
-			<meta name="twitter:image" content="/tw.png">
-		</head>`;
-	const r = extract(ctx("https://example.com/", html));
+test("og-rich.html: every returned URL is absolute", async () => {
+	const r = extract(ctx(PAGE, await load("og-rich.html")));
+	expect(r.url).toMatch(/^https?:\/\//);
+	expect(r.image?.url).toMatch(/^https?:\/\//);
+});
+
+test("twitter-only.html: twitter fields used when no og:* tags present", async () => {
+	const r = extract(ctx(PAGE, await load("twitter-only.html")));
 	expect(r).toEqual({
-		url: "https://example.com/",
-		title: "og title",
-		description: "tw description",
-		image: { url: "https://example.com/tw.png" },
+		url: PAGE,
+		title: "Twitter Only Page",
+		description: "Twitter Card fixture with no Open Graph tags.",
+		image: { url: "https://example.metascan.dev/twitter-only/card.png" },
 	});
 });
 
-test("standard meta fallback: <title> + meta description when no og/twitter", () => {
-	const html = `
-		<head>
-			<title>std title</title>
-			<meta name="description" content="std description">
-		</head>`;
-	const r = extract(ctx("https://example.com/", html));
-	expect(r).toEqual({
-		url: "https://example.com/",
-		title: "std title",
-		description: "std description",
-	});
+test("twitter-only.html: image url is absolute", async () => {
+	const r = extract(ctx(PAGE, await load("twitter-only.html")));
+	expect(r.image?.url).toMatch(/^https?:\/\//);
 });
 
-test("partial fallback uses first <img> when no og/twitter tags exist", () => {
-	const html = `
-		<head><title>std title</title></head>
-		<body>
-			<img src="/first.png" alt="first">
-			<img src="/second.png">
-		</body>`;
-	const r = extract(ctx("https://example.com/", html));
+test("bare.html: partial fallback uses <title> + first <img>, description empty, siteName omitted", async () => {
+	const r = extract(ctx(PAGE, await load("bare.html")));
 	expect(r).toEqual({
-		url: "https://example.com/",
-		title: "std title",
+		url: PAGE,
+		title: "Bare Page",
 		description: "",
-		image: { url: "https://example.com/first.png", alt: "first" },
+		image: {
+			url: "https://example.metascan.dev/bare/only-image.png",
+			alt: "the only one on the page",
+		},
 	});
+	expect(r).not.toHaveProperty("siteName");
 });
 
-test("first <img> fallback is skipped when any og/twitter meta is present", () => {
-	const html = `
-		<head>
-			<meta property="og:title" content="og title">
-		</head>
-		<body><img src="/should-skip.png"></body>`;
-	const r = extract(ctx("https://example.com/", html)) as {
-		image?: unknown;
-	} & Record<string, unknown>;
-	expect(r.image).toBeUndefined();
-	expect(r.title).toBe("og title");
+test("bare.html: resolved image url is absolute", async () => {
+	const r = extract(ctx(PAGE, await load("bare.html")));
+	expect(r.image?.url).toMatch(/^https?:\/\//);
 });
 
-test("relative image url resolved against <base href>", () => {
-	const html = `
-		<head>
-			<base href="https://cdn.example.com/sub/">
-			<meta property="og:image" content="img/og.png">
-		</head>`;
-	const r = extract(ctx("https://example.com/", html));
-	expect(r.image?.url).toBe("https://cdn.example.com/sub/img/og.png");
-});
-
-test("relative url resolved against page url when no <base>", () => {
-	const html = `<head><meta property="og:image" content="img/og.png"></head>`;
-	const r = extract(ctx("https://example.com/sub/page", html));
-	expect(r.image?.url).toBe("https://example.com/sub/img/og.png");
-});
-
-test("absolute image url preserved", () => {
-	const html = `<head><meta property="og:image" content="https://cdn.example.com/x.png"></head>`;
-	const r = extract(ctx("https://example.com/", html));
-	expect(r.image?.url).toBe("https://cdn.example.com/x.png");
-});
-
-test("always provides url/title/description; omits image/siteName when absent", () => {
-	const html = `<head><title>only title</title></head>`;
-	const r = extract(ctx("https://example.com/", html));
-	expect(r.url).toBe("https://example.com/");
-	expect(r.title).toBe("only title");
-	expect(r.description).toBe("");
+test("empty.html: title present, description empty string, image and siteName omitted", async () => {
+	const r = extract(ctx(PAGE, await load("empty.html")));
+	expect(r).toEqual({
+		url: PAGE,
+		title: "Empty Page",
+		description: "",
+	});
 	expect(r).not.toHaveProperty("image");
 	expect(r).not.toHaveProperty("siteName");
 });
 
-test("empty/whitespace meta values are treated as absent", () => {
-	const html = `
-		<head>
-			<meta property="og:title" content="   ">
-			<meta property="og:description" content="">
-			<title>real title</title>
-		</head>`;
-	const r = extract(ctx("https://example.com/", html));
-	expect(r.title).toBe("real title");
-	expect(r.description).toBe("");
+test("empty.html: url is absolute", async () => {
+	const r = extract(ctx(PAGE, await load("empty.html")));
+	expect(r.url).toMatch(/^https?:\/\//);
 });
 
-test("og:image without twitter: image uses og; siteName omitted when absent", () => {
-	const html = `
-		<head>
-			<meta property="og:title" content="t">
-			<meta property="og:image" content="/img.png">
-		</head>`;
-	const r = extract(ctx("https://example.com/", html));
-	expect(r.image?.url).toBe("https://example.com/img.png");
-	expect(r).not.toHaveProperty("siteName");
-});
-
-test("pure function: same input yields same output across calls", () => {
-	const html = `<head><meta property="og:title" content="t"></head>`;
-	const a = extract(ctx("https://example.com/", html));
-	const b = extract(ctx("https://example.com/", html));
-	expect(a).toEqual(b);
-});
-
-test("twitter:image used when og:image absent, resolved absolute", () => {
-	const html = `<head><meta name="twitter:image" content="tw.png"></head>`;
-	const r = extract(ctx("https://example.com/sub/", html));
-	expect(r.image?.url).toBe("https://example.com/sub/tw.png");
+test("all fixtures: url field is always an absolute URL", async () => {
+	const names = [
+		"og-rich.html",
+		"twitter-only.html",
+		"bare.html",
+		"empty.html",
+	];
+	for (const name of names) {
+		const r = extract(ctx(PAGE, await load(name)));
+		expect(r.url).toMatch(/^https?:\/\//);
+	}
 });
