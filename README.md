@@ -37,8 +37,130 @@ server depends on core via `"@metascan/core": "workspace:*"`.
 
 ## Install
 
+### Use the library (`@metascan/core`)
+
+```sh
+bun add @metascan/core
+```
+
+`@metascan/core` is web-standard (global `fetch`, `URL`, `Request`, `Response`,
+`Headers` — no `node:*` imports), so it runs on Bun and any modern runtime that
+provides those globals.
+
+### Work on this repo
+
 ```sh
 bun install
+```
+
+## Usage
+
+`preview(url, options?)` fetches a URL, follows redirects, parses the HTML, and
+returns a `PreviewResult` (title, description, image, site name). Results are
+cached; the second call for the same URL is served from cache without
+re-fetching.
+
+```ts
+import { preview, type PreviewResult } from "@metascan/core";
+
+const result: PreviewResult = await preview("https://example.com");
+
+console.log(result.url);        // "https://example.com/"
+console.log(result.title);      // "Example Domain"
+console.log(result.description);
+console.log(result.image);      // { url: "..." } | undefined
+console.log(result.siteName);   // "Example" | undefined
+console.log(result.adapter);    // "default" | "youtube" | "twitter" | ...
+console.log(result.fromCache);  // false on first call, true on cache hits
+```
+
+### Options
+
+All options are optional. The most common ones:
+
+```ts
+import { MemoryCache, preview, type PreviewResult } from "@metascan/core";
+
+const result = await preview("https://example.com", {
+  timeoutMs: 1500,        // per-request timeout (default 1500ms)
+  maxRedirects: 3,        // default 3
+  maxBytes: 2 * 1024 * 1024, // cap response body (default 2 MiB)
+  userAgent: "my-bot/1.0",
+  cache: new MemoryCache<PreviewResult>({ defaultTtlMs: 60 * 60 * 1000 }),
+  cacheTtlMs: 60 * 60 * 1000,
+});
+```
+
+| Option          | Type                  | Default      | Notes                                                       |
+| --------------- | --------------------- | ------------ | ----------------------------------------------------------- |
+| `timeoutMs`     | `number`              | `1500`       | Per-request abort timeout.                                  |
+| `maxRedirects`  | `number`              | `3`          | HTTP redirects followed manually.                           |
+| `maxBytes`      | `number`              | `2 MiB`      | Response body is truncated past this.                       |
+| `userAgent`     | `string`              | `metascan/*` | `User-Agent` header sent on the fetch.                      |
+| `fetch`         | `FetchFn`             | global fetch | Inject a custom/fetch mock (handy for tests).               |
+| `cache`         | `Cache<PreviewResult>`| shared `MemoryCache` | Override the cache (e.g. a Redis-backed `Cache`). |
+| `cacheTtlMs`    | `number`              | cache default | TTL for the entry written by this call.                    |
+| `adapters`      | `Adapter[]`           | built-ins    | Per-call adapters prepended ahead of built-ins.             |
+
+### Adapters
+
+Site-specific extraction is pluggable via adapters. Built-ins (`youtube`,
+`twitter`/X, then the OG `default` extractor) run in registry order; the first
+adapter whose `match(url)` returns `true` wins. Register a custom adapter to
+run ahead of the built-ins:
+
+```ts
+import {
+  preview,
+  registerAdapter,
+  type Adapter,
+  type AdapterContext,
+} from "@metascan/core";
+
+const wikiAdapter: Adapter = {
+  name: "wikipedia",
+  match: (url) => url.hostname.endsWith("wikipedia.org"),
+  extract(ctx: AdapterContext) {
+    // Adapters receive already-fetched HTML + the parsed URL; they MUST NOT
+    // fetch the network themselves. Return null to defer to the next adapter.
+    const $ = ctx.$;
+    const title = $("h1#firstHeading").first().text().trim();
+    if (!title) return null;
+    return {
+      url: ctx.url.href,
+      title,
+      description: $("#mw-content-text p").first().text().trim(),
+    };
+  },
+};
+
+registerAdapter(wikiAdapter);
+
+const result = await preview("https://en.wikipedia.org/wiki/Bun_(software)");
+console.log(result.adapter); // "wikipedia"
+```
+
+You can also pass adapters per call without mutating global state —
+`preview(url, { adapters: [wikiAdapter] })` prepends them ahead of the
+built-ins for that call only.
+
+### Errors
+
+`preview()` throws a `PreviewError` on failure. Inspect `error.code` to branch
+on the failure class:
+
+```ts
+import { PreviewError, preview } from "@metascan/core";
+
+try {
+  await preview("not-a-url");
+} catch (err) {
+  if (err instanceof PreviewError) {
+    console.log(err.code); // "INVALID_URL" | "TIMEOUT" | "FETCH_ERROR" |
+                           // "PARSE_ERROR" | "TOO_MANY_REDIRECTS"
+    console.log(err.url);
+  }
+}
 ```
 
 ## Scripts (run from the repo root)
