@@ -125,3 +125,26 @@ test("registered custom adapter with matching hostname selected over built-in wi
 	const result = resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 	expect(result?.name).toBe("custom-youtube");
 });
+
+test("custom adapters maintain registration order (first registered wins)", () => {
+	setBuiltInAdapters([youtube]);
+
+	const first = makeAdapter("first-custom", "www.youtube.com");
+	const second = makeAdapter("second-custom", "www.youtube.com");
+	registerAdapter(first);
+	registerAdapter(second);
+
+	const result = resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+	expect(result?.name).toBe("first-custom");
+});
+
+test("default adapter resolves only after custom and built-in adapters fail to match", () => {
+	setBuiltInAdapters([youtube]);
+	setDefaultAdapter(fallback);
+
+	const custom = makeAdapter("custom-generic", "example.com");
+	registerAdapter(custom);
+
+	const result = resolve("https://unknown.example.com/page");
+	expect(result?.name).toBe("default");
+});

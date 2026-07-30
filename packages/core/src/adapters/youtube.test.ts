@@ -82,6 +82,15 @@ test("extract: returns null when title is missing", async () => {
 	expect(result).toBeNull();
 });
 
+test("extract: returns null when description is missing", () => {
+	const html =
+		'<html><head><meta property="og:title" content="A Video Title"></head></html>';
+	const result = youtubeAdapter.extract(
+		ctx("https://www.youtube.com/watch?v=abc123", html),
+	);
+	expect(result).toBeNull();
+});
+
 test("name is youtube", () => {
 	expect(youtubeAdapter.name).toBe("youtube");
 });

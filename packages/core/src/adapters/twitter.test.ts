@@ -92,6 +92,15 @@ test("extract: returns null when title is missing", async () => {
 	expect(result).toBeNull();
 });
 
+test("extract: returns null when description is missing", () => {
+	const html =
+		'<html><head><meta property="og:title" content="A Tweet Title"></head></html>';
+	const result = twitterAdapter.extract(
+		ctx("https://x.com/marco/status/abc123", html),
+	);
+	expect(result).toBeNull();
+});
+
 test("name is twitter", () => {
 	expect(twitterAdapter.name).toBe("twitter");
 });
