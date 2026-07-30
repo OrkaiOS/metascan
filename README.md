@@ -166,11 +166,13 @@ try {
 
 ## Scripts (run from the repo root)
 
-| Script       | Command               | What it does                                  |
-| ------------ | --------------------- | --------------------------------------------- |
-| `test`       | `bun test`            | Run the `bun:test` suite across all workspaces. |
-| `lint`       | `bun run lint`        | Biome lint + format check (`biome check .`).   |
-| `format`     | `bun run format`      | Biome format write.                            |
+| Script       | Command               | What it does                                                  |
+| ------------ | --------------------- | ------------------------------------------------------------- |
+| `test`       | `bun test`            | Run the `bun:test` suite across all workspaces.               |
+| `lint`       | `bun run lint`        | Biome lint + format check (`biome check .`).                  |
+| `typecheck`  | `bun run typecheck`   | `tsc --noEmit` across core src, core tests, and server.       |
+| `build`      | `bun run build`       | Build all workspaces (`@metascan/core` → `dist`).             |
+| `format`     | `bun run format`      | Biome format write.                                           |
 
 ## Tooling
 
@@ -179,6 +181,64 @@ try {
 - **Biome** for lint + format (single root `biome.json`; no ESLint/Prettier).
 - **`bun:test`** runner; tests are colocated as `*.test.ts` next to the module
   under test.
+
+## Running the server locally
+
+You can run the HTTP server directly with Bun — no Docker, and (since the server
+consumes `@metascan/core` from source) no build step either.
+
+```sh
+# any of these start metascan-server on :3000
+bun apps/server/src/index.ts
+bun run metascan-server                       # linked workspace bin
+bun run --filter metascan-server start
+```
+
+Pick a different port with `PORT`:
+
+```sh
+PORT=4321 bun apps/server/src/index.ts
+# metascan-server listening on :4321
+```
+
+### Endpoints
+
+- `GET /health` → `{"status":"ok"}`
+- `GET /preview?url=<url>` → a `PreviewResult` JSON (title, description, image,
+  siteName, …)
+
+```sh
+curl http://localhost:3000/health
+# {"status":"ok"}
+
+curl 'http://localhost:3000/preview?url=https://example.com'
+# {"url":"https://example.com/","title":"Example Domain","description":"","adapter":"default","fetchedAt":1785418589215,"fromCache":false}
+```
+
+Missing or empty `url` returns `400` with `{"error":{"code":"INVALID_URL",...}}`;
+fetch/parse failures map to typed error codes (see [Errors](#errors)).
+
+### Environment variables
+
+All optional. They tune the server the same way locally and in Docker.
+
+| Variable                 | Default | Description                                                         |
+| ------------------------ | ------- | ------------------------------------------------------------------- |
+| `PORT`                   | `3000`  | TCP port the HTTP server binds (`Bun.serve({ port })`).             |
+| `METASCAN_TIMEOUT_MS`    | unset   | Per-URL fetch timeout in ms (core default `1500`).                  |
+| `METASCAN_MAX_REDIRECTS` | unset   | Max HTTP redirects followed (core default `3`).                     |
+| `METASCAN_CACHE_TTL`     | unset   | Preview cache TTL in ms (core default `3600000` / 1h).              |
+
+Non-positive or non-integer values are ignored, so the core defaults apply.
+
+### Run the test suite
+
+No live server is needed for tests — the suite drives Hono's app in-process:
+
+```sh
+bun test          # full suite (core + server), 102 pass across 12 files
+bun run typecheck # tsc --noEmit across core src, core tests, and server
+```
 
 ## Docker
 
@@ -199,11 +259,12 @@ docker run --rm -p 3000:3000 metascan-server
 
 ### Environment variables
 
-| Variable | Default | Description                                                                 |
-| -------- | ------- | --------------------------------------------------------------------------- |
-| `PORT`   | `3000`  | TCP port the HTTP server binds inside the container (`Bun.serve({ port })`). |
+The server honors the same environment variables as when running
+[locally](#running-the-server-locally) (`PORT`, `METASCAN_TIMEOUT_MS`,
+`METASCAN_MAX_REDIRECTS`, `METASCAN_CACHE_TTL`); pass them with `-e`.
 
-To run on a different host port or container port, combine `-p` with `PORT`.
+`PORT` controls the in-container port, which you publish with `-p`. To run on a
+different host port or container port, combine `-p` with `PORT`.
 For example, host `8080` → container `3000` (default):
 
 ```sh
@@ -245,8 +306,10 @@ runtime errors** in the container logs (`metascan-server listening on :3000`).
 
 ## Status
 
-🚧 Under active development (v1). Public API, build, and HTTP routes land in
-later milestones; see the roadmap for details.
+✅ **v1 shipped** — `@metascan/core` library + `metascan-server` HTTP app, with
+the adapter system, caching, Docker image, and full lint/typecheck/test gates
+passing from a clean checkout. See `requirements.md` for the v1 scope and
+non-goals.
 
 ## License
 
