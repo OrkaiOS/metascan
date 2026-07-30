@@ -91,6 +91,47 @@ test("extract: returns null when description is missing", () => {
 	expect(result).toBeNull();
 });
 
+test("extract: resolves a relative og:image to an absolute URL", () => {
+	const html =
+		"<html><head>" +
+		'<meta property="og:title" content="Relative Image Video">' +
+		'<meta property="og:description" content="desc">' +
+		'<meta property="og:image" content="/vi/abc123/hqdefault.jpg">' +
+		"</head></html>";
+	const result = youtubeAdapter.extract(
+		ctx("https://www.youtube.com/watch?v=abc123", html),
+	);
+	expect(result?.image?.url).toBe(
+		"https://www.youtube.com/vi/abc123/hqdefault.jpg",
+	);
+});
+
+test("extract: resolves a protocol-relative og:image against the page base", () => {
+	const html =
+		"<html><head>" +
+		'<meta property="og:title" content="Title">' +
+		'<meta property="og:description" content="desc">' +
+		'<meta property="og:image" content="//i.ytimg.com/vi/abc123/default.jpg">' +
+		"</head></html>";
+	const result = youtubeAdapter.extract(
+		ctx("https://www.youtube.com/watch?v=abc123", html),
+	);
+	expect(result?.image?.url).toBe("https://i.ytimg.com/vi/abc123/default.jpg");
+});
+
+test("extract: drops an unresolvable og:image instead of throwing", () => {
+	const html =
+		"<html><head>" +
+		'<meta property="og:title" content="Title">' +
+		'<meta property="og:description" content="desc">' +
+		'<meta property="og:image" content="https://[invalid-url">' +
+		"</head></html>";
+	const result = youtubeAdapter.extract(
+		ctx("https://www.youtube.com/watch?v=abc123", html),
+	);
+	expect(result?.image).toBeUndefined();
+});
+
 test("name is youtube", () => {
 	expect(youtubeAdapter.name).toBe("youtube");
 });

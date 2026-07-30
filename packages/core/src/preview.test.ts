@@ -232,3 +232,33 @@ test("explicit cache option overrides the shared default cache", async () => {
 	expect(fromA.fromCache).toBe(true);
 	expect(fetch.calls).toHaveLength(2);
 });
+
+test("non-HTML content types return an empty-fields result without erroring", async () => {
+	for (const contentType of [
+		"application/pdf",
+		"application/json",
+		"image/png",
+	]) {
+		const fetch = scriptedFetch({
+			"https://example.com/resource": () =>
+				new Response("binary", {
+					status: 200,
+					headers: { "content-type": contentType },
+				}),
+		});
+		const cache = new MemoryCache<PreviewResult>();
+
+		const result = await preview("https://example.com/resource", {
+			fetch,
+			cache,
+		});
+
+		expect(result.url).toBe("https://example.com/resource");
+		expect(result.title).toBe("");
+		expect(result.description).toBe("");
+		expect(result.adapter).toBe("default");
+		expect(result.fromCache).toBe(false);
+		expect(result.image).toBeUndefined();
+		expect(result.siteName).toBeUndefined();
+	}
+});

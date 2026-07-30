@@ -9,12 +9,16 @@
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
+			"development": "./src/index.ts",
 			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
+			"bun": "./src/index.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"src"
 	],
 	"dependencies": {
 		"cheerio": "^1.2.0"

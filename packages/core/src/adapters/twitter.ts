@@ -1,4 +1,5 @@
 import type { CheerioAPI } from "cheerio";
+import { resolveBase, resolveUrl } from "../extractors/url";
 import type { Adapter, AdapterContext, AdapterResult } from "../types";
 
 export const twitterAdapter: Adapter = {
@@ -15,6 +16,7 @@ export const twitterAdapter: Adapter = {
 
 	extract(ctx: AdapterContext): AdapterResult {
 		const $ = ctx.$ as CheerioAPI;
+		const base = resolveBase($, ctx.url);
 
 		const title =
 			$('meta[property="og:title"]').first().attr("content")?.trim() ??
@@ -31,6 +33,7 @@ export const twitterAdapter: Adapter = {
 		const ogImage =
 			$('meta[property="og:image"]').first().attr("content")?.trim() ??
 			$('meta[name="twitter:image"]').first().attr("content")?.trim();
+		const image = ogImage ? resolveUrl(ogImage, base) : undefined;
 
 		const siteName =
 			$('meta[property="og:site_name"]').first().attr("content")?.trim() ??
@@ -40,7 +43,7 @@ export const twitterAdapter: Adapter = {
 			url: ctx.url.href,
 			title,
 			description,
-			...(ogImage ? { image: { url: ogImage } } : {}),
+			...(image ? { image: { url: image } } : {}),
 			...(siteName ? { siteName } : {}),
 		};
 	},
