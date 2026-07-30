@@ -1,5 +1,6 @@
 import type { CheerioAPI } from "cheerio";
 import type { AdapterContext, PreviewImage, PreviewResult } from "../types";
+import { resolveBase, resolveUrl } from "./url";
 
 type Selection = ReturnType<CheerioAPI>;
 
@@ -95,26 +96,4 @@ function pickMeta(
 		if (value && value.trim() !== "") return value.trim();
 	}
 	return undefined;
-}
-
-function resolveBase($: CheerioAPI, url: URL): URL {
-	const href = $("base[href]").first().attr("href");
-	if (href) {
-		try {
-			return new URL(href, url);
-		} catch {
-			return url;
-		}
-	}
-	return url;
-}
-
-function resolveUrl(raw: string, base: URL): string | undefined {
-	const trimmed = raw.trim();
-	if (trimmed === "") return undefined;
-	try {
-		return new URL(trimmed, base).href;
-	} catch {
-		return undefined;
-	}
 }

@@ -61,9 +61,14 @@ function extractPreview(
 	options?: PreviewOptions,
 ): PreviewResult {
 	if (fetched.html === "") {
-		throw new PreviewError("PARSE_ERROR", `No HTML content at ${rawUrl}`, {
-			url: rawUrl,
-		});
+		return {
+			url: fetched.url,
+			title: "",
+			description: "",
+			adapter: "default",
+			fetchedAt: Date.now(),
+			fromCache: false,
+		};
 	}
 
 	let $: cheerio.CheerioAPI;

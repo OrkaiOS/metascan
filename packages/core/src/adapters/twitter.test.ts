@@ -101,6 +101,34 @@ test("extract: returns null when description is missing", () => {
 	expect(result).toBeNull();
 });
 
+test("extract: resolves a relative twitter:image to an absolute URL", () => {
+	const html =
+		"<html><head>" +
+		'<meta property="og:title" content="Title">' +
+		'<meta name="twitter:description" content="desc">' +
+		'<meta name="twitter:image" content="/card_img/abc/large?format=jpg">' +
+		"</head></html>";
+	const result = twitterAdapter.extract(
+		ctx("https://x.com/marco/status/123", html),
+	);
+	expect(result?.image?.url).toBe(
+		"https://x.com/card_img/abc/large?format=jpg",
+	);
+});
+
+test("extract: resolves a protocol-relative twitter:image against the page base", () => {
+	const html =
+		"<html><head>" +
+		'<meta property="og:title" content="Title">' +
+		'<meta name="twitter:description" content="desc">' +
+		'<meta name="twitter:image" content="//pbs.twimg.com/img/x.jpg">' +
+		"</head></html>";
+	const result = twitterAdapter.extract(
+		ctx("https://x.com/marco/status/123", html),
+	);
+	expect(result?.image?.url).toBe("https://pbs.twimg.com/img/x.jpg");
+});
+
 test("name is twitter", () => {
 	expect(twitterAdapter.name).toBe("twitter");
 });
