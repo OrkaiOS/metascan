@@ -57,6 +57,69 @@ bun install
 - **`bun:test`** runner; tests are colocated as `*.test.ts` next to the module
   under test.
 
+## Docker
+
+The server ships as a container image via a multi-stage `Dockerfile` at
+`apps/server/Dockerfile`. The build context is the **repo root** (the image
+copies the root `package.json` + `bun.lock` and both workspaces so Bun can
+resolve the `@metascan/core` workspace link), so build from there:
+
+```sh
+docker build -f apps/server/Dockerfile -t metascan-server .
+```
+
+Run the image, publishing the container's port 3000 to the host:
+
+```sh
+docker run --rm -p 3000:3000 metascan-server
+```
+
+### Environment variables
+
+| Variable | Default | Description                                                                 |
+| -------- | ------- | --------------------------------------------------------------------------- |
+| `PORT`   | `3000`  | TCP port the HTTP server binds inside the container (`Bun.serve({ port })`). |
+
+To run on a different host port or container port, combine `-p` with `PORT`.
+For example, host `8080` → container `3000` (default):
+
+```sh
+docker run --rm -p 8080:3000 metascan-server
+```
+
+To override the in-container port, set `PORT` and publish it:
+
+```sh
+docker run --rm -p 4000:4000 -e PORT=4000 metascan-server
+```
+
+### Smoke check
+
+With a container running (`docker run --rm -p 3000:3000 metascan-server`),
+
+1. **Health** — expect HTTP `200`:
+
+   ```sh
+   curl -i http://localhost:3000/health
+   # HTTP/1.1 200 OK
+   # content-type: application/json
+   # {"status":"ok"}
+   ```
+
+2. **Preview** — expect `200` and a JSON body (a `PreviewResult`):
+
+   ```sh
+   curl -s 'http://localhost:3000/preview?url=https://example.com' | jq .
+   # {
+   #   "url": "https://example.com/",
+   #   "title": "Example Domain",
+   #   ...
+   # }
+   ```
+
+A clean run shows `/health` → `200` and `/preview?url=…` → JSON with **no
+runtime errors** in the container logs (`metascan-server listening on :3000`).
+
 ## Status
 
 🚧 Under active development (v1). Public API, build, and HTTP routes land in

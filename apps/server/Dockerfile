@@ -20,4 +20,4 @@ COPY packages/ ./packages/
 COPY apps/ ./apps/
 
 EXPOSE 3000
-CMD ["bun", "run", "metascan-server"]
+CMD ["bun", "run", "apps/server/src/index.ts"]
