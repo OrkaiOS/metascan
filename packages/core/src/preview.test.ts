@@ -81,7 +81,6 @@ test("cached result preserves all PreviewResult fields", async () => {
 	const first = await preview("https://example.com/", opts);
 	await preview("https://example.com/", opts);
 
-	const keys: string[] = [];
 	const stored = await cache.get("https://example.com/");
 	expect(stored).toBeDefined();
 	expect(stored).not.toBeNull();
@@ -93,7 +92,6 @@ test("cached result preserves all PreviewResult fields", async () => {
 		expect(stored.adapter).toBe(first.adapter);
 		expect(stored.fromCache).toBe(false);
 	}
-	expect(keys).toEqual([]);
 });
 
 test("a custom Cache implementation is accepted and used", async () => {
