@@ -13,6 +13,7 @@
 		"bun": ">=1.2.0"
 	},
 	"scripts": {
+		"build": "bun run --filter '*' build",
 		"test": "bun test",
 		"lint": "biome check .",
 		"format": "biome format --write .",
