@@ -1,6 +1,7 @@
 import {
 	preview as corePreview,
 	PreviewError,
+	type PreviewOptions,
 	type PreviewResult,
 	VERSION,
 } from "@metascan/core";
@@ -9,7 +10,34 @@ import { Hono } from "hono";
 export { VERSION };
 export const APP_NAME = "metascan-server";
 
-let previewFn: (url: string) => Promise<PreviewResult> = corePreview;
+export interface ServerConfig {
+	port: number;
+	coreOptions: PreviewOptions;
+}
+
+function readPositiveInt(value: string | undefined): number | undefined {
+	if (value === undefined || value === "") return undefined;
+	const n = Number(value);
+	if (!Number.isInteger(n) || n <= 0) return undefined;
+	return n;
+}
+
+export function loadConfig(
+	env: Record<string, string | undefined> = process.env,
+): ServerConfig {
+	const port = readPositiveInt(env.PORT) ?? 3000;
+	const coreOptions: PreviewOptions = {
+		timeoutMs: readPositiveInt(env.METASCAN_TIMEOUT_MS),
+		maxRedirects: readPositiveInt(env.METASCAN_MAX_REDIRECTS),
+		cacheTtlMs: readPositiveInt(env.METASCAN_CACHE_TTL),
+	};
+	return { port, coreOptions };
+}
+
+const config = loadConfig();
+
+let previewFn: (url: string) => Promise<PreviewResult> = (url) =>
+	corePreview(url, config.coreOptions);
 export function _setPreviewFn(fn: typeof previewFn): void {
 	previewFn = fn;
 }
@@ -59,7 +87,6 @@ function errorStatus(code: PreviewError["code"]): 400 | 502 | 504 {
 }
 
 if (import.meta.main) {
-	const port = Number(process.env.PORT ?? 3000);
-	Bun.serve({ port, fetch: app.fetch });
-	console.log(`${APP_NAME} listening on :${port}`);
+	Bun.serve({ port: config.port, fetch: app.fetch });
+	console.log(`${APP_NAME} listening on :${config.port}`);
 }
