@@ -15,7 +15,8 @@
 		"start": "bun run src/index.ts"
 	},
 	"dependencies": {
-		"@metascan/core": "workspace:*"
+		"@metascan/core": "workspace:*",
+		"hono": "^4.7.0"
 	},
 	"engines": {
 		"bun": ">=1.2.0"
