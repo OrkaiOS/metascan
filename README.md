@@ -110,6 +110,7 @@ adapter whose `match(url)` returns `true` wins. Register a custom adapter to
 run ahead of the built-ins:
 
 ```ts
+import type { CheerioAPI } from "cheerio";
 import {
   preview,
   registerAdapter,
@@ -123,7 +124,7 @@ const wikiAdapter: Adapter = {
   extract(ctx: AdapterContext) {
     // Adapters receive already-fetched HTML + the parsed URL; they MUST NOT
     // fetch the network themselves. Return null to defer to the next adapter.
-    const $ = ctx.$;
+    const $ = ctx.$ as CheerioAPI;
     const title = $("h1#firstHeading").first().text().trim();
     if (!title) return null;
     return {
