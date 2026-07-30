@@ -3,8 +3,8 @@ FROM oven/bun:1 AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
-COPY packages/core/package.json packages/core/
-COPY apps/server/package.json apps/server/
+COPY packages/ packages/
+COPY apps/ apps/
 
 RUN bun install --frozen-lockfile
 
@@ -13,6 +13,8 @@ FROM oven/bun:1
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
 COPY package.json bun.lock ./
 COPY packages/ ./packages/
 COPY apps/ ./apps/
