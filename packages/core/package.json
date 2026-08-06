@@ -1,6 +1,6 @@
 {
 	"name": "@metascan/core",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "Fast, resilient TypeScript link-preview engine.",
 	"license": "MIT",
 	"type": "module",

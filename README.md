@@ -311,6 +311,21 @@ the adapter system, caching, Docker image, and full lint/typecheck/test gates
 passing from a clean checkout. See `requirements.md` for the v1 scope and
 non-goals.
 
+## orkai review (optional)
+
+Maintainers review changes with [orkai](https://getorkai.com), an
+AI-assisted code review pipeline that checks diffs against this project's
+standards (fetch safety, adapter authoring, output contract, runtime &
+toolchain). Contributors can opt in — or skip it entirely; the pre-commit
+hook no-ops when orkai is not installed. See [docs/REVIEW.md](docs/REVIEW.md)
+for setup. The cleaned knowledge-base export lives in
+[docs/orkai/metascan-skeleton.orkai.jsonl](docs/orkai/metascan-skeleton.orkai.jsonl).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development loop and PR
+process, and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
 ## License
 
 [MIT](./LICENSE) © Metascan Contributors

@@ -13,7 +13,7 @@
     },
     "apps/server": {
       "name": "metascan-server",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "bin": {
         "metascan-server": "./src/index.ts",
       },
@@ -24,7 +24,7 @@
     },
     "packages/core": {
       "name": "@metascan/core",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "dependencies": {
         "cheerio": "^1.2.0",
       },
