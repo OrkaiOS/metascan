@@ -14,6 +14,7 @@
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
 		"skipLibCheck": true,
+		"customConditions": ["development"],
 		"types": ["bun"]
 	}
 }

@@ -1,3 +1,5 @@
+import type { Cache } from "./cache/types";
+
 export interface PreviewImage {
 	url: string;
 	alt?: string;
@@ -27,6 +29,9 @@ export interface PreviewOptions {
 	maxBytes?: number;
 	userAgent?: string;
 	fetch?: FetchFn;
+	cache?: Cache<PreviewResult>;
+	cacheTtlMs?: number;
+	adapters?: Adapter[];
 }
 
 export type CheerioRoot = unknown;

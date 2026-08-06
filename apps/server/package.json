@@ -1,6 +1,6 @@
 {
 	"name": "metascan-server",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "HTTP server app exposing @metascan/core over a Hono-on-Bun API.",
 	"private": true,
 	"license": "MIT",
@@ -15,7 +15,8 @@
 		"start": "bun run src/index.ts"
 	},
 	"dependencies": {
-		"@metascan/core": "workspace:*"
+		"@metascan/core": "workspace:*",
+		"hono": "^4.7.0"
 	},
 	"engines": {
 		"bun": ">=1.2.0"

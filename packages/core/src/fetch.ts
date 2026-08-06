@@ -5,7 +5,7 @@ export const DEFAULT_TIMEOUT_MS = 1500;
 export const DEFAULT_MAX_REDIRECTS = 3;
 export const DEFAULT_MAX_BYTES = 2 * 1024 * 1024;
 export const DEFAULT_USER_AGENT =
-	"metascan/0.1.0 (+https://github.com/OrkaiOS/metascan)";
+	"metascan/1.0.0 (+https://github.com/OrkaiOS/metascan)";
 
 const HTML_ACCEPT = "text/html,application/xhtml+xml";
 
