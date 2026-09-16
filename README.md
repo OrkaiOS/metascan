@@ -308,8 +308,7 @@ runtime errors** in the container logs (`metascan-server listening on :3000`).
 
 ✅ **v1 shipped** — `@metascan/core` library + `metascan-server` HTTP app, with
 the adapter system, caching, Docker image, and full lint/typecheck/test gates
-passing from a clean checkout. See `requirements.md` for the v1 scope and
-non-goals.
+passing from a clean checkout.
 
 ## orkai review (optional)
 
